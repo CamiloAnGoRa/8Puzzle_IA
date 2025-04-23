@@ -26,7 +26,9 @@ class Bloque(pygame.sprite.Sprite): #Hereda de pygame.sprite.Sprite
             font_x = (tamaño_bloque - self.font_size[0]) // 2 #Calculo de posicion para centrar horizontal y verticalmente el texto
             font_y = (tamaño_bloque - self.font_size[1]) // 2
             self.image.blit(font_surface, (font_x, font_y)) # blit dibuja la superficie del texto sobre el bloque 
-        
+        else:
+            self.image.fill(BGcolor) #Color bloque vacio, del mismo del fondo
+
         # Llama a actualización para posicionar correctamente el rectángulo
         self.actualizacion()
 
@@ -51,3 +53,33 @@ class Bloque(pygame.sprite.Sprite): #Hereda de pygame.sprite.Sprite
         # True = dentro del bloque, False = Fuera del bloque 
         #self.rect alamacena posicion y tamaño, atributos left right, top, bottom
         return self.rect.left <= mouse_x <= self.rect.right and self.rect.top <= mouse_y <= self.rect.bottom
+
+
+
+
+    ##############################
+    #########derecha##############
+    ############################## 
+    def right(self):
+        return self.rect.x + tamaño_bloque < tamaño_tablero + tamaño_bloque
+
+
+    ##############################
+    #########izquierda############
+    ############################## 
+    def left(self):
+        return self.rect.x - tamaño_bloque >= 0
+
+
+    ##############################
+    #########arriba###############
+    ##############################
+    def up(self):
+        return self.rect.y - tamaño_bloque >= 0
+
+
+    ##############################
+    #########abajo################
+    ############################## 
+    def down(self):
+        return self.rect.y + tamaño_bloque < tamaño_tablero + tamaño_bloque

@@ -152,6 +152,38 @@ class juego:
                 pygame.quit() #Al dar click en la X de la ventalla se llama a "pygame.quit"
                 quit(0) #Termina el programa sin errores, el codigo de salida es (0)
 
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                for row, bloques in enumerate(self.bloques):
+                    for col, bloque in enumerate(bloques):
+                        if bloque.click(mouse_x, mouse_y):
+                            # Verificar si hay un espacio vacío adyacente
+                            # Derecha
+                            if col < tamaño_tablero - 1 and self.bloques_grid[row][col + 1] == 0:
+                                # Intercambiar valores en la matriz
+                                self.bloques_grid[row][col], self.bloques_grid[row][col + 1] = self.bloques_grid[row][col + 1], self.bloques_grid[row][col]
+                                # Recrear los bloques visuales
+                                self.all_sprites.empty()  # Limpiar sprites antiguos
+                                self.dibujar_bloques()
+                                return  # Salir después de mover
+                            # Izquierda
+                            elif col > 0 and self.bloques_grid[row][col - 1] == 0:
+                                self.bloques_grid[row][col], self.bloques_grid[row][col - 1] = self.bloques_grid[row][col - 1], self.bloques_grid[row][col]
+                                self.all_sprites.empty()
+                                self.dibujar_bloques()
+                                return
+                            # Arriba
+                            elif row > 0 and self.bloques_grid[row - 1][col] == 0:
+                                self.bloques_grid[row][col], self.bloques_grid[row - 1][col] = self.bloques_grid[row - 1][col], self.bloques_grid[row][col]
+                                self.all_sprites.empty()
+                                self.dibujar_bloques()
+                                return
+                            # Abajo
+                            elif row < tamaño_tablero - 1 and self.bloques_grid[row + 1][col] == 0:
+                                self.bloques_grid[row][col], self.bloques_grid[row + 1][col] = self.bloques_grid[row + 1][col], self.bloques_grid[row][col]
+                                self.all_sprites.empty()
+                                self.dibujar_bloques()
+                                return
 
 ##############################
 #########bucle################
