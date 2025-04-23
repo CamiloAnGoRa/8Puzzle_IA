@@ -31,17 +31,28 @@ class juego:
         self.ini_jue = False
         self.iniciar_crono = 0
         self.tiempo_transcurrido = 0
-        self.puntaje = float(self.puntaje()[0])
+        self.movimientos = 0
+    
+        # Leer puntajes del archivo
+        self.puntaje, self.mejor_movimientos = self.leer_puntajes()
 
 
 
     ##############################
     ##########Puntaje#############
     ############################## 
-    def puntaje(self):
-        with open("Puntajes.txt", "r") as file:
-            puntajes = file.read().splitlines()
-        return puntajes
+    def leer_puntajes(self):
+        try:
+            with open("Puntajes.txt", "r") as file:
+                contenido = file.read().strip()
+                if "," in contenido:
+                    tiempo, movimientos = contenido.split(",")
+                    return float(tiempo), int(movimientos)
+                else:
+                    # Compatibilidad con formato antiguo
+                    return float(contenido), 0
+        except:
+            return 0, 0
     
 
     ##############################
@@ -49,7 +60,7 @@ class juego:
     ############################## 
     def guardar(self):
         with open("Puntajes.txt", "w") as file:
-            file.write(str("%.3f\n"% self.puntaje))
+            file.write(f"{self.puntaje:.3f},{self.mejor_movimientos}")
 
 
 
@@ -162,6 +173,7 @@ class juego:
         self.all_sprites = pygame.sprite.Group() #contenedor de pygame para manejo de multipples sprites, permite actualizar y dibujar todos los sprites del juego de forma eficiente
         self.bloques_grid = self.crear_juego() #Llamado de metodo "crear_juego", genera matriz de numeros ordenados, estado inicial del tablero
         self.bloques_grid_completado = self.crear_juego() #Una segunda matriz igual, referencia de juego completado
+        self.movimientos = 0
         self.tiempo_transcurrido = 0
         self.iniciar_crono = False
         self.ini_jue = False
@@ -193,11 +205,10 @@ class juego:
         if self.ini_jue:
             if self.bloques_grid == self.bloques_grid_completado:
                 self.ini_jue = False
-                if self.puntaje > 0:
-                    self.puntaje = self.tiempo_transcurrido if self.tiempo_transcurrido < self.puntaje else self.puntaje
-                else:
+                if self.puntaje <= 0 or self.tiempo_transcurrido < self.puntaje:
                     self.puntaje = self.tiempo_transcurrido
-                self.guardar()
+                    self.mejor_movimientos = self.movimientos  # Guardar los movimientos asociados al mejor tiempo
+                    self.guardar()
 
             if self.iniciar_crono:
                 self.timer = time.time()
@@ -260,8 +271,11 @@ class juego:
         for Boton in self.botones:
             Boton.dibujar(self.screen)
         UIElement(710, 380, "Puntaje mas alto - %.3f" % (self.puntaje if self.puntaje > 0 else 0)).dibujar(self.screen)
+        
+        UIElement(710, 460, "Mejores movimientos - %d" % self.mejor_movimientos).dibujar(self.screen)
         #Cronometro en la parte superior de los botones, inicia y solo muestra 3 de los decimales para que no se salga de la pantalla
-        UIElement(825, 35, '%.3f' % self.tiempo_transcurrido).dibujar(self.screen)
+        UIElement(825, 35, "Tiempo - %.3f" % self.tiempo_transcurrido).dibujar(self.screen)
+        UIElement(825, 70, "Movimientos - %d" % self.movimientos).dibujar(self.screen)
         self.all_sprites.draw(self.screen)  # Dibuja todos los bloques
         pygame.display.flip() #Actualiza la pantalla
 
@@ -287,6 +301,8 @@ class juego:
                             if col < tamaño_tablero - 1 and self.bloques_grid[row][col + 1] == 0:
                                 # Intercambiar valores en la matriz
                                 self.bloques_grid[row][col], self.bloques_grid[row][col + 1] = self.bloques_grid[row][col + 1], self.bloques_grid[row][col]
+                                # Incrementar contador de movimientos
+                                self.movimientos += 1
                                 # Recrear los bloques visuales
                                 self.all_sprites.empty()  # Limpiar sprites antiguos
                                 self.dibujar_bloques()
