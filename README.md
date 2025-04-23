@@ -79,3 +79,69 @@ Extensiones Opcionales:
 - Visualización tipo grafo de estados explorados.
 
 - Implementación en interfaz web (Flask, Streamlit, etc.)
+
+
+
+############################# SOLUCION #######################################
+
+librerias a usar archivo main.py
+- pygame (import pygame) (conda install -c conda-forge pygame) 
+- random (import random)
+- time (import time)
+- sprite (archivo creador por nosotros "sprite.py") (from sprite import *)
+- settings (archivo creado por nosotros "settings.py") (from settings import *)
+
+
+Diagrama juego
+INICIO
+  |
+  v
+Establecer jugando=True
+  |
+  v
+┌───────────────────────┐
+│ while self.jugando:   │
+│   │                   │
+│   v                   │
+│  Control FPS          │
+│   │                   │
+│   v                   │
+│  Procesar Eventos     │
+│   │                   │
+│   v                   │
+│  Actualizar Lógica    │
+│   │                   │
+│   v                   │
+│  Dibujar Pantalla     │
+│   │                   │
+│   └───────────────────┘
+  |
+  v
+FIN (cuando jugando=False) 
+
+Clase juego
+- def __init__
+- def crear_juego
+- def dibujar_bloques
+- def nuevo_juego
+- def iniciar
+- def actualizar
+- def dibujar_cuadricula
+- def dibujar
+- def eventos
+
+
+Bucle del juego
+
+
+Configuraciones archivo settings.py
+Colores, sombras, tamaños, titulo, lineas del tablero
+
+Configuraciones archivo sprite.py
+Librerias usadas
+- pygame (import pygame)
+- settings (Archivo creado por nosotro) (from settings import *)
+Clase Bloque
+- def __init__
+- def actualizacion
+- def click
