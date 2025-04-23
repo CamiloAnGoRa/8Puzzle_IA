@@ -25,6 +25,9 @@ class juego:
         #Creacion de un objeto clock, control los fps del juego (misma velocidad en distintos dispositivos)
         self.clock = pygame.time.Clock()
 
+        self.revolver_tiempo = 0
+        self.iniciar_rev = False
+
 
 
     ##############################
@@ -67,7 +70,12 @@ class juego:
         self.all_sprites = pygame.sprite.Group() #contenedor de pygame para manejo de multipples sprites, permite actualizar y dibujar todos los sprites del juego de forma eficiente
         self.bloques_grid = self.crear_juego() #Llamado de metodo "crear_juego", genera matriz de numeros ordenados, estado inicial del tablero
         self.bloques_grid_completado = self.crear_juego() #Una segunda matriz igual, referencia de juego completado
+        self.botones = []
+        self.botones.append(Boton(775, 100, 200, 50, "Revolver", white, black ))
+        self.botones.append(Boton(775, 170, 200, 50, "Reinciar", white, black ))
+        self.botones.append(Boton(775, 240, 200, 50, "Resolver", white, black ))
         self.dibujar_bloques()  # Llamado de metodo para representacion visual en objetos, de manera inmediata para tener los bloques listos
+
 
 
     ##############################
@@ -139,8 +147,12 @@ class juego:
     def dibujar(self):
         self.screen.fill(BGcolor) #Limpar pantalla
         self.dibujar_cuadricula() #Dibuja el tablero
+        for Boton in self.botones:
+            Boton.dibujar(self.screen)
         self.all_sprites.draw(self.screen)  # Dibuja todos los bloques
         pygame.display.flip() #Actualiza la pantalla
+
+
 
 
     ##############################
@@ -184,6 +196,16 @@ class juego:
                                 self.all_sprites.empty()
                                 self.dibujar_bloques()
                                 return
+                            
+                for boton in self.botones:
+                    if boton.click(mouse_x, mouse_y):
+                        if boton.text == "Revolver":
+                            self.revolver_tiempo = 0
+                            self.iniciar_rev = True
+                        if boton.text == "Reiniciar":
+                            self.nuevo_juego()
+                        #if boton.text == "Resolver":
+
 
 ##############################
 #########bucle################

@@ -83,3 +83,43 @@ class Bloque(pygame.sprite.Sprite): #Hereda de pygame.sprite.Sprite
     ############################## 
     def down(self):
         return self.rect.y + tamaño_bloque < tamaño_tablero + tamaño_bloque
+    
+
+
+##############################
+############UI################
+############################## 
+
+class UIElement:
+    def __init__(self, x, y, text):
+        self.x, self.y = x, y
+        self.text = text
+
+    ##############################
+    #########Dibujar##############
+    ############################## 
+    def dibujar(self, screen):
+        font = pygame.font.SysFont("Consolas", 50)
+        text = font.render(self.text, True, white)
+        screen.blit(text, (self.x, self.y))
+
+##############################
+############Boton#############
+############################## 
+class Boton:
+    def __init__(self, x, y, width, height, text, color, text_color):
+        self.color, self.text_color = color, text_color
+        self.width, self.height = width, height
+        self.x, self.y = x, y
+        self.text = text
+        self.font = pygame.font.SysFont("Consolas", 30)
+
+    def dibujar(self, screen):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))# Dibujar el rectángulo del botón
+        text_surface = self.font.render(self.text, True, self.text_color) # Renderizar el texto
+        text_rect = text_surface.get_rect(center=(self.x + self.width // 2,self.y + self.height // 2)) # Obtener el rectángulo del texto y centrarlo en el botón
+        screen.blit(text_surface, text_rect) # Dibujar el texto en la pantalla
+
+
+    def click(self, mouse_x, mouse_y): 
+        return self.x <= mouse_x <= self.x + self.width and self.y <= mouse_y <= self.y + self.height
