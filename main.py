@@ -7,7 +7,7 @@ import random #Genera numeros aleatorios (posiciones, comportamientos aleatorios
 import time #Manejo de tiempos y retrasos
 from sprite import * #Archivo de sprites o modelos para el juegos sprite.py
 from settings import * #Archivo de configuraciones base para detalles del juego settings.py
-
+from metodos_busqueda import *
 
 ##############################
 ##########Clases##############
