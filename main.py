@@ -31,6 +31,26 @@ class juego:
         self.ini_jue = False
         self.iniciar_crono = 0
         self.tiempo_transcurrido = 0
+        self.puntaje = float(self.puntaje()[0])
+
+
+
+    ##############################
+    ##########Puntaje#############
+    ############################## 
+    def puntaje(self):
+        with open("Puntajes.txt", "r") as file:
+            puntajes = file.read().splitlines()
+        return puntajes
+    
+
+    ##############################
+    ##########Guardar#############
+    ############################## 
+    def guardar(self):
+        with open("Puntajes.txt", "w") as file:
+            file.write(str("%.3f\n"% self.puntaje))
+
 
 
 
@@ -142,12 +162,14 @@ class juego:
         self.all_sprites = pygame.sprite.Group() #contenedor de pygame para manejo de multipples sprites, permite actualizar y dibujar todos los sprites del juego de forma eficiente
         self.bloques_grid = self.crear_juego() #Llamado de metodo "crear_juego", genera matriz de numeros ordenados, estado inicial del tablero
         self.bloques_grid_completado = self.crear_juego() #Una segunda matriz igual, referencia de juego completado
+        self.tiempo_transcurrido = 0
+        self.iniciar_crono = False
+        self.ini_jue = False
         self.botones = []
         self.botones.append(Boton(775, 100, 200, 50, "Revolver", white, black ))
-        self.botones.append(Boton(775, 170, 200, 50, "Reinciar", white, black ))
+        self.botones.append(Boton(775, 170, 200, 50, "Reiniciar", white, black ))
         self.botones.append(Boton(775, 240, 200, 50, "Resolver", white, black ))
         self.dibujar_bloques()  # Llamado de metodo para representacion visual en objetos, de manera inmediata para tener los bloques listos
-
 
 
     ##############################
@@ -166,8 +188,22 @@ class juego:
     #######actualizaciones########
     ############################## 
     def actualizar(self):
-        # Asegurarse de que todos los sprites se actualicen correctamente
-        self.all_sprites.update()
+        
+
+        if self.ini_jue:
+            if self.bloques_grid == self.bloques_grid_completado:
+                self.ini_jue = False
+                if self.puntaje > 0:
+                    self.puntaje = self.tiempo_transcurrido if self.tiempo_transcurrido < self.puntaje else self.puntaje
+                else:
+                    self.puntaje = self.tiempo_transcurrido
+                self.guardar()
+
+            if self.iniciar_crono:
+                self.timer = time.time()
+                self.iniciar_crono = False
+            self.tiempo_transcurrido = time.time() - self.timer
+
 
         #Condicion para revolver el tablero
         if self.iniciar_rev:
@@ -176,7 +212,11 @@ class juego:
             self.revolver_tiempo += 1
             if self.revolver_tiempo > 120: #Si al presionar revolver el tablero llega a los dos segundos, para 
                 self.iniciar_rev = False #Pasamos a un estado False o apagado para que no se revuelva mas el tablero
+                self.ini_jue = True
+                self.iniciar_crono = True
 
+        # Asegurarse de que todos los sprites se actualicen correctamente
+        self.all_sprites.update()
 
 
 
@@ -219,6 +259,9 @@ class juego:
         self.dibujar_cuadricula() #Dibuja el tablero
         for Boton in self.botones:
             Boton.dibujar(self.screen)
+        UIElement(710, 380, "Puntaje mas alto - %.3f" % (self.puntaje if self.puntaje > 0 else 0)).dibujar(self.screen)
+        #Cronometro en la parte superior de los botones, inicia y solo muestra 3 de los decimales para que no se salga de la pantalla
+        UIElement(825, 35, '%.3f' % self.tiempo_transcurrido).dibujar(self.screen)
         self.all_sprites.draw(self.screen)  # Dibuja todos los bloques
         pygame.display.flip() #Actualiza la pantalla
 

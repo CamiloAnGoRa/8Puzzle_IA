@@ -99,7 +99,7 @@ class UIElement:
     #########Dibujar##############
     ############################## 
     def dibujar(self, screen):
-        font = pygame.font.SysFont("Consolas", 50)
+        font = pygame.font.SysFont("Consolas", 20)
         text = font.render(self.text, True, white)
         screen.blit(text, (self.x, self.y))
 
