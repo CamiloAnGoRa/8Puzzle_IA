@@ -27,6 +27,10 @@ class juego:
 
         self.revolver_tiempo = 0
         self.iniciar_rev = False
+        self.mov_prev = ""
+        self.ini_jue = False
+        self.iniciar_crono = 0
+        self.tiempo_transcurrido = 0
 
 
 
@@ -44,7 +48,75 @@ class juego:
         return grid #Devuelve la matriz generada para el juego
 
 
+    ##############################
+    ##########Revolver############
+    ############################## 
+    def revolver(self, num_movimientos=100):
+    # Inicializa mov_prev si no existe
+        if not hasattr(self, 'mov_prev'):
+            self.mov_prev = None
+    
+        for _ in range(num_movimientos):
+            # Encuentra la posición del espacio vacío
+            espacio_vacio = None
+            for row in range(tamaño_tablero):
+                for col in range(tamaño_tablero):
+                    if self.bloques_grid[row][col] == 0:
+                        espacio_vacio = (row, col)
+                        break
+                if espacio_vacio:
+                    break
+                
+            if not espacio_vacio:
+                return  # No se encontró espacio vacío (no debería ocurrir)
 
+            row, col = espacio_vacio
+            movimientos_posibles = []
+
+            # Verifica qué movimientos son posibles desde la posición del espacio vacío
+            # Derecha (mover bloque de la derecha hacia la izquierda)
+            if col < tamaño_tablero - 1:
+                movimientos_posibles.append("right")
+            # Izquierda (mover bloque de la izquierda hacia la derecha)
+            if col > 0:
+                movimientos_posibles.append("left")
+            # Abajo (mover bloque de abajo hacia arriba)
+            if row < tamaño_tablero - 1:
+                movimientos_posibles.append("down")
+            # Arriba (mover bloque de arriba hacia abajo)
+            if row > 0:
+                movimientos_posibles.append("up")
+
+            # Evita movimientos que deshagan el anterior
+            if self.mov_prev == "right" and "left" in movimientos_posibles:
+                movimientos_posibles.remove("left")
+            elif self.mov_prev == "left" and "right" in movimientos_posibles:
+                movimientos_posibles.remove("right")
+            elif self.mov_prev == "up" and "down" in movimientos_posibles:
+                movimientos_posibles.remove("down")
+            elif self.mov_prev == "down" and "up" in movimientos_posibles:
+                movimientos_posibles.remove("up")
+
+            if not movimientos_posibles:
+                continue  # Si no hay movimientos posibles (raro, pero por seguridad)
+            
+            # Elige un movimiento aleatorio
+            choice = random.choice(movimientos_posibles)
+            self.mov_prev = choice
+
+            # Realiza el movimiento (intercambia el espacio vacío con el bloque adyacente)
+            if choice == "right":  # Mover bloque derecho hacia el espacio vacío
+                self.bloques_grid[row][col], self.bloques_grid[row][col + 1] = self.bloques_grid[row][col + 1], self.bloques_grid[row][col]
+            elif choice == "left":  # Mover bloque izquierdo hacia el espacio vacío
+                self.bloques_grid[row][col], self.bloques_grid[row][col - 1] = self.bloques_grid[row][col - 1], self.bloques_grid[row][col]
+            elif choice == "up":  # Mover bloque superior hacia el espacio vacío
+                self.bloques_grid[row][col], self.bloques_grid[row - 1][col] = self.bloques_grid[row - 1][col], self.bloques_grid[row][col]
+            elif choice == "down":  # Mover bloque inferior hacia el espacio vacío
+                self.bloques_grid[row][col], self.bloques_grid[row + 1][col] = self.bloques_grid[row + 1][col], self.bloques_grid[row][col]
+
+        # Actualizar la visualización después de revolver
+        #self.all_sprites.empty()
+        #self.dibujar_bloques()
 
     ##############################
     #######dibujar_bloques########
@@ -97,6 +169,16 @@ class juego:
         # Asegurarse de que todos los sprites se actualicen correctamente
         self.all_sprites.update()
 
+        #Condicion para revolver el tablero
+        if self.iniciar_rev:
+            self.revolver()
+            self.dibujar_bloques()
+            self.revolver_tiempo += 1
+            if self.revolver_tiempo > 120: #Si al presionar revolver el tablero llega a los dos segundos, para 
+                self.iniciar_rev = False #Pasamos a un estado False o apagado para que no se revuelva mas el tablero
+
+
+
 
 
     ##############################
@@ -122,23 +204,11 @@ class juego:
 
         # Líneas verticales
         for row in range(-1, ancho_tab + 1, tamaño_bloque): #Comienza antes del borde y termina despues para bordes completos (Vertical)
-            pygame.draw.line(
-                self.screen, 
-                gris_claro, 
-                (row, 0), 
-                (row, alto_tab),
-                width=grosor_linea
-            )
+            pygame.draw.line(self.screen, gris_claro, (row, 0), (row, alto_tab),width=grosor_linea)
 
         # Líneas horizontales
         for col in range(-1, alto_tab + 1, tamaño_bloque):  #Comienza antes del borde y termina despues para bordes completos (Horizontal)
-            pygame.draw.line(
-                self.screen, 
-                gris_claro, 
-                (0, col), 
-                (ancho_tab, col),
-                width=grosor_linea
-            )
+            pygame.draw.line(self.screen, gris_claro, (0, col), (ancho_tab, col),width=grosor_linea)
 
 
     ##############################
