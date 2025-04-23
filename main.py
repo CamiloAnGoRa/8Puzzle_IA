@@ -42,11 +42,12 @@ class juego:
     ##########Puntaje#############
     ############################## 
     def leer_puntajes(self):
+        #Lectura de datos del archivo
         try:
-            with open("Puntajes.txt", "r") as file:
-                contenido = file.read().strip()
+            with open("Puntajes.txt", "r") as file: #El archivo se cierre de manera correcta despues de usarlo
+                contenido = file.read().strip() #strip  Elimina espacios en blanco al inicio y final del contenido
                 if "," in contenido:
-                    tiempo, movimientos = contenido.split(",")
+                    tiempo, movimientos = contenido.split(",") #split separa los valores ","
                     return float(tiempo), int(movimientos)
                 else:
                     # Compatibilidad con formato antiguo
