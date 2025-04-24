@@ -45,13 +45,16 @@ class juego:
         #Lectura de datos del archivo
         try:
             with open("Puntajes.txt", "r") as file: #El archivo se cierre de manera correcta despues de usarlo
-                contenido = file.read().strip() #strip  Elimina espacios en blanco al inicio y final del contenido
-                if "," in contenido:
-                    tiempo, movimientos = contenido.split(",") #split separa los valores ","
-                    return float(tiempo), int(movimientos)
+                contenido = file.readlines() #strip  Elimina espacios en blanco al inicio y final del contenido
+                if contenido:
+                    primera_linea = contenido[0].strip()
+                    if "," in primera_linea:
+                        tiempo, movimientos = primera_linea.split(",") #split separa los valores ","
+                        return float(tiempo), int(movimientos)
+                    else:
+                        return float(primera_linea), 0
                 else:
-                    # Compatibilidad con formato antiguo
-                    return float(contenido), 0
+                    return 0, 0
         except:
             return 0, 0
     
@@ -60,8 +63,23 @@ class juego:
     ##########Guardar#############
     ############################## 
     def guardar(self):
+        # Leer datos existentes de BFS si los hay
+        bfs_data = ""
+        try:
+            with open("Puntajes.txt", "r") as file:
+                lineas = file.readlines()
+                if len(lineas) > 1:  # Si hay datos de BFS
+                    bfs_data = "".join(lineas[1:])
+        except:
+            pass
+
         with open("Puntajes.txt", "w") as file:
             file.write(f"{self.puntaje:.3f},{self.mejor_movimientos}")
+            if self.stats_solucion and self.stats_solucion["exito"]:
+                file.write(f"BFS,{self.stats_solucion['tiempo_ejecucion']:.3f},{self.stats_solucion['longitud_camino']},{self.stats_solucion['nodos_expandidos']}\n")
+            elif bfs_data:  # Mantener datos BFS previos si existen
+                file.write(bfs_data)
+
 
 
 
@@ -179,9 +197,38 @@ class juego:
         self.iniciar_crono = False
         self.ini_jue = False
         self.botones = []
-        self.botones.append(Boton(775, 100, 200, 50, "Revolver", white, black ))
-        self.botones.append(Boton(775, 170, 200, 50, "Reiniciar", white, black ))
-        self.botones.append(Boton(775, 240, 200, 50, "Resolver", white, black ))
+        self.botones.append(Boton(810, 100, 200, 50, "Revolver", white, black ))
+        self.botones.append(Boton(810, 170, 200, 50, "Reiniciar", white, black ))
+        self.botones.append(Boton(810, 240, 200, 50, "Resolver", white, black ))
+        self.botones.append(Boton(810, 310, 55, 35, "BFS", white, black))
+        self.botones.append(Boton(875, 310, 55, 35, "DFS", white, black))
+        self.botones.append(Boton(940, 310, 55, 35, "A*", white, black))
+
+
+        # Variables para la solución automática
+        self.resolviendo = False
+        self.solucion_pasos = []
+        self.paso_actual = 0
+        self.tiempo_paso = 0
+        self.algoritmo_seleccionado = "BFS"
+        self.stats_solucion = None
+        # Leer datos de BFS si existen
+        try:
+            with open("Puntajes.txt", "r") as file:
+                lineas = file.readlines()
+                if len(lineas) > 1:  # Si hay datos de BFS
+                    bfs_data = lineas[1].strip().split(",")
+                    if len(bfs_data) >= 4 and bfs_data[0] == "BFS":
+                        self.stats_solucion = {
+                            "exito": True,
+                            "tiempo_ejecucion": float(bfs_data[1]),
+                            "longitud_camino": int(bfs_data[2]),
+                            "nodos_expandidos": int(bfs_data[3])
+                        }
+        except:
+            pass
+
+
         self.dibujar_bloques()  # Llamado de metodo para representacion visual en objetos, de manera inmediata para tener los bloques listos
 
 
@@ -190,6 +237,15 @@ class juego:
     ############################## 
     def iniciar(self):
         self.jugando = True #Inicia el bucle principal, termina el juego al cambiar el estado de True->False
+
+
+        self.solucion_pasos = []
+        self.resolviendo = False
+        self.paso_actual = 0
+        self.tiempo_paso = 0
+        self.stats_solucion = None
+
+
         while self.jugando: #Bucle ejecutado mientras el estado sea True
             self.clock.tick(fps) #Regula la velocidad del juego
             self.eventos() #Procesa todoos los enventos generados por el usuarios, 
@@ -201,20 +257,19 @@ class juego:
     #######actualizaciones########
     ############################## 
     def actualizar(self):
-        
+        if not self.resolviendo:
+            if self.ini_jue:
+                if self.bloques_grid == self.bloques_grid_completado:
+                    self.ini_jue = False
+                    if self.puntaje <= 0 or self.tiempo_transcurrido < self.puntaje:
+                        self.puntaje = self.tiempo_transcurrido
+                        self.mejor_movimientos = self.movimientos  # Guardar los movimientos asociados al mejor tiempo
+                        self.guardar()
 
-        if self.ini_jue:
-            if self.bloques_grid == self.bloques_grid_completado:
-                self.ini_jue = False
-                if self.puntaje <= 0 or self.tiempo_transcurrido < self.puntaje:
-                    self.puntaje = self.tiempo_transcurrido
-                    self.mejor_movimientos = self.movimientos  # Guardar los movimientos asociados al mejor tiempo
-                    self.guardar()
-
-            if self.iniciar_crono:
-                self.timer = time.time()
-                self.iniciar_crono = False
-            self.tiempo_transcurrido = time.time() - self.timer
+                if self.iniciar_crono:
+                    self.timer = time.time()
+                    self.iniciar_crono = False
+                self.tiempo_transcurrido = time.time() - self.timer
 
 
         #Condicion para revolver el tablero
@@ -226,6 +281,39 @@ class juego:
                 self.iniciar_rev = False #Pasamos a un estado False o apagado para que no se revuelva mas el tablero
                 self.ini_jue = True
                 self.iniciar_crono = True
+
+
+        # Manejo de la solución paso a paso
+        if self.resolviendo and self.solucion_pasos:
+            if self.tiempo_paso >= 15:  # Esperar 0.5 segundos entre pasos (30 frames a 60 FPS)
+                if self.paso_actual < len(self.solucion_pasos):
+                    # Aplicar el siguiente paso de la solución
+                    _, nuevo_tablero = self.solucion_pasos[self.paso_actual]
+                    # Crear una copia profunda del tablero para evitar problemas de referencia
+                    self.bloques_grid = []
+                    for fila in nuevo_tablero:
+                        self.bloques_grid.append(list(fila))
+                    
+                    # Actualizar la visualización
+                    self.all_sprites.empty()
+                    self.dibujar_bloques()
+                    
+                    # Actualizar contador y tiempo
+                    self.paso_actual += 1
+                    self.movimientos = self.paso_actual
+                    self.tiempo_paso = 0
+                    
+                    # Forzar redibujado
+                    self.dibujar()
+                else:
+                    # Finalizar la resolución
+                    self.resolviendo = False
+                    # Permitir reiniciar o revolver el juego
+                    self.ini_jue = False
+                    if self.bloques_grid == self.bloques_grid_completado:
+                        self.guardar()
+            else:
+                self.tiempo_paso += 1
 
         # Asegurarse de que todos los sprites se actualicen correctamente
         self.all_sprites.update()
@@ -272,15 +360,23 @@ class juego:
         for Boton in self.botones:
             Boton.dibujar(self.screen)
         UIElement(710, 380, "Puntaje mas alto - %.3f" % (self.puntaje if self.puntaje > 0 else 0)).dibujar(self.screen)
-        
         UIElement(710, 460, "Mejores movimientos - %d" % self.mejor_movimientos).dibujar(self.screen)
         #Cronometro en la parte superior de los botones, inicia y solo muestra 3 de los decimales para que no se salga de la pantalla
         UIElement(825, 35, "Tiempo - %.3f" % self.tiempo_transcurrido).dibujar(self.screen)
         UIElement(825, 70, "Movimientos - %d" % self.movimientos).dibujar(self.screen)
+
+
+        # Mostrar estadísticas de la solución si están disponibles
+        if self.stats_solucion:
+            y_offset = 500
+            UIElement(710, y_offset, "Algoritmo: BFS").dibujar(self.screen)
+            UIElement(710, y_offset + 30, f"Nodos expandidos: {self.stats_solucion['nodos_expandidos']}").dibujar(self.screen)
+            UIElement(710, y_offset + 60, f"Longitud del camino: {self.stats_solucion.get('longitud_camino', 'N/A')}").dibujar(self.screen)
+            UIElement(710, y_offset + 90, f"Tiempo de ejecución: {self.stats_solucion['tiempo_ejecucion']:.4f} s").dibujar(self.screen)
+
+
         self.all_sprites.draw(self.screen)  # Dibuja todos los bloques
         pygame.display.flip() #Actualiza la pantalla
-
-
 
 
     ##############################
@@ -294,38 +390,58 @@ class juego:
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                for row, bloques in enumerate(self.bloques):
-                    for col, bloque in enumerate(bloques):
-                        if bloque.click(mouse_x, mouse_y):
-                            # Verificar si hay un espacio vacío adyacente
-                            # Derecha
-                            if col < tamaño_tablero - 1 and self.bloques_grid[row][col + 1] == 0:
-                                # Intercambiar valores en la matriz
-                                self.bloques_grid[row][col], self.bloques_grid[row][col + 1] = self.bloques_grid[row][col + 1], self.bloques_grid[row][col]
-                                # Incrementar contador de movimientos
-                                self.movimientos += 1
-                                # Recrear los bloques visuales
-                                self.all_sprites.empty()  # Limpiar sprites antiguos
-                                self.dibujar_bloques()
-                                return  # Salir después de mover
-                            # Izquierda
-                            elif col > 0 and self.bloques_grid[row][col - 1] == 0:
-                                self.bloques_grid[row][col], self.bloques_grid[row][col - 1] = self.bloques_grid[row][col - 1], self.bloques_grid[row][col]
-                                self.all_sprites.empty()
-                                self.dibujar_bloques()
-                                return
-                            # Arriba
-                            elif row > 0 and self.bloques_grid[row - 1][col] == 0:
-                                self.bloques_grid[row][col], self.bloques_grid[row - 1][col] = self.bloques_grid[row - 1][col], self.bloques_grid[row][col]
-                                self.all_sprites.empty()
-                                self.dibujar_bloques()
-                                return
-                            # Abajo
-                            elif row < tamaño_tablero - 1 and self.bloques_grid[row + 1][col] == 0:
-                                self.bloques_grid[row][col], self.bloques_grid[row + 1][col] = self.bloques_grid[row + 1][col], self.bloques_grid[row][col]
-                                self.all_sprites.empty()
-                                self.dibujar_bloques()
-                                return
+
+                # Procesar clicks en botones primero
+                for boton in self.botones:
+                    if boton.click(mouse_x, mouse_y):
+                        if boton.text == "Revolver":
+                            self.revolver_tiempo = 0
+                            self.iniciar_rev = True
+                            self.resolviendo = False  # Detener cualquier solución en progreso
+                        elif boton.text == "Reiniciar":
+                            self.nuevo_juego()
+                            self.resolviendo = False  # Asegurarse de que no esté resolviendo
+                        elif boton.text == "Resolver":
+                            if not self.resolviendo:  # Evitar iniciar múltiples soluciones
+                                self.resolver_puzzle()
+                        elif boton.text in ["BFS", "DFS", "A*"]:
+                            self.algoritmo_seleccionado = boton.text
+                        return  # Procesamos el click del botón y salimos
+
+                #Solo procesar clicks en bloques si no se esta resolviendo
+                if not self.resolviendo:
+                    for row, bloques in enumerate(self.bloques):
+                        for col, bloque in enumerate(bloques):
+                            if bloque.click(mouse_x, mouse_y):
+                                # Verificar si hay un espacio vacío adyacente
+                                # Derecha
+                                if col < tamaño_tablero - 1 and self.bloques_grid[row][col + 1] == 0:
+                                    # Intercambiar valores en la matriz
+                                    self.bloques_grid[row][col], self.bloques_grid[row][col + 1] = self.bloques_grid[row][col + 1], self.bloques_grid[row][col]
+                                    # Incrementar contador de movimientos
+                                    self.movimientos += 1
+                                    # Recrear los bloques visuales
+                                    self.all_sprites.empty()  # Limpiar sprites antiguos
+                                    self.dibujar_bloques()
+                                    return  # Salir después de mover
+                                # Izquierda
+                                elif col > 0 and self.bloques_grid[row][col - 1] == 0:
+                                    self.bloques_grid[row][col], self.bloques_grid[row][col - 1] = self.bloques_grid[row][col - 1], self.bloques_grid[row][col]
+                                    self.all_sprites.empty()
+                                    self.dibujar_bloques()
+                                    return
+                                # Arriba
+                                elif row > 0 and self.bloques_grid[row - 1][col] == 0:
+                                    self.bloques_grid[row][col], self.bloques_grid[row - 1][col] = self.bloques_grid[row - 1][col], self.bloques_grid[row][col]
+                                    self.all_sprites.empty()
+                                    self.dibujar_bloques()
+                                    return
+                                # Abajo
+                                elif row < tamaño_tablero - 1 and self.bloques_grid[row + 1][col] == 0:
+                                    self.bloques_grid[row][col], self.bloques_grid[row + 1][col] = self.bloques_grid[row + 1][col], self.bloques_grid[row][col]
+                                    self.all_sprites.empty()
+                                    self.dibujar_bloques()
+                                    return
                             
                 for boton in self.botones:
                     if boton.click(mouse_x, mouse_y):
@@ -334,7 +450,40 @@ class juego:
                             self.iniciar_rev = True
                         if boton.text == "Reiniciar":
                             self.nuevo_juego()
-                        #if boton.text == "Resolver":
+                        if boton.text == "Resolver":
+                            self.resolver_puzzle()
+
+
+
+    ##############################
+    #########resolver#############
+    ##############################
+    def resolver_puzzle(self):
+        # Verificar si el juego ya está resuelto
+        if self.bloques_grid == self.bloques_grid_completado:
+            return
+        
+        self.resolviendo = False
+
+        # Resolver el puzzle con BFS
+        resultado = resolver_puzzle(self.bloques_grid, self.bloques_grid_completado, "BFS", tamaño_tablero)
+
+        if resultado["exito"]:
+            # Guardar la solución para la visualización paso a paso
+            self.solucion_pasos = resultado["camino"]
+            self.stats_solucion = resultado
+            self.resolviendo = True
+            self.paso_actual = 0
+            self.tiempo_paso = 0
+            # Detener el cronómetro del juego manual
+            self.ini_jue = False
+
+            # Imprimir algunos datos para depuración
+            print(f"Solucion encontrada: {len(self.solucion_pasos)} pasos")
+        else:
+            # Mensaje de error en caso de no haber solucion
+            print("No se pudo encontrar una solución.")
+            self.stats_solucion = resultado
 
 
 ##############################
