@@ -151,5 +151,100 @@ def bfs(estado_inicial, estado_objetivo, tamaño_tablero):
 def resolver_puzzle(tablero_actual, tablero_objetivo, algoritmo, tamaño_tablero):
     if algoritmo == "BFS":
         return bfs(tablero_actual, tablero_objetivo, tamaño_tablero)
+    elif algoritmo == "A*":
+        return astar(tablero_actual, tablero_objetivo, tamaño_tablero)
     else:
         return {"exito": False, "error": "Solo se ha implementado el algoritmo BFS"}
+    
+
+
+##############################
+########Heuristica############
+##############################
+def heuristica_manhattan(estado, estado_objetivo):
+    #Calcula la distancia Manhattan para cada pieza del puzzle
+    h = 0
+    n = len(estado.tablero)
+    
+    #Crear un diccionario que mapee cada valor a su posicion objetivo
+    posiciones_objetivo = {}
+    for i in range(n):
+        for j in range(n):
+            posiciones_objetivo[estado_objetivo[i][j]] = (i, j)
+    
+    #Calcular la distancia Manhattan para cada pieza
+    for i in range(n):
+        for j in range(n):
+            valor = estado.tablero[i][j]
+            if valor != 0:  #Ignoramos el espacio vacio
+                pos_obj = posiciones_objetivo[valor]
+                h += abs(i - pos_obj[0]) + abs(j - pos_obj[1])
+    
+    return h
+
+
+##############################
+#############A*###############
+##############################
+def astar(estado_inicial, estado_objetivo, tamaño_tablero):
+    tiempo_inicio = time.time()
+    
+    #Crear el estado inicial con el tablero inicial
+    estado_inicial = Estado(estado_inicial)
+    
+    #Inicializar la cola de prioridad con el estado inicial
+    frontera = []
+    #La prioridad es f(n) = g(n) + h(n), donde g(n) es el costo hasta ahora y h(n) es la heuristica
+    f_valor = estado_inicial.costo + heuristica_manhattan(estado_inicial, estado_objetivo)
+    heapq.heappush(frontera, (f_valor, id(estado_inicial), estado_inicial))
+    
+    #Diccionario para almacenar estados visitados y su costo
+    explorados = {}
+    
+    #Contador de nodos expandidos
+    nodos_expandidos = 0
+    
+    while frontera:
+        #Obtener el estado con menor f(n)
+        _, _, estado_actual = heapq.heappop(frontera)
+        nodos_expandidos += 1
+        
+        #Verificar si hemos llegado al estado objetivo
+        if es_objetivo(estado_actual, estado_objetivo):
+            tiempo_fin = time.time()
+            camino = reconstruir_camino(estado_actual)
+            return {
+                "exito": True,
+                "camino": camino,
+                "nodos_expandidos": nodos_expandidos,
+                "longitud_camino": len(camino),
+                "tiempo_ejecucion": tiempo_fin - tiempo_inicio
+            }
+        
+        #Generar un hash para el estado actual
+        estado_hash = hash(tuple(tuple(row) for row in estado_actual.tablero))
+        
+        #Si ya exploramos este estado con un costo menor, no lo expandimos de nuevo
+        if estado_hash in explorados and explorados[estado_hash] <= estado_actual.costo:
+            continue
+        
+        #Marcar como explorado
+        explorados[estado_hash] = estado_actual.costo
+        
+        #Obtener sucesores
+        for sucesor in obtener_sucesores(estado_actual, tamaño_tablero):
+            sucesor_hash = hash(tuple(tuple(row) for row in sucesor.tablero))
+            
+            #Si no hemos explorado este estado o encontramos un camino mejor
+            if sucesor_hash not in explorados or explorados[sucesor_hash] > sucesor.costo:
+                # Calcular f(n) = g(n) + h(n)
+                f_valor = sucesor.costo + heuristica_manhattan(sucesor, estado_objetivo)
+                heapq.heappush(frontera, (f_valor, id(sucesor), sucesor))
+    
+    #Si no se encuentra solucion
+    tiempo_fin = time.time()
+    return {
+        "exito": False,
+        "nodos_expandidos": nodos_expandidos,
+        "tiempo_ejecucion": tiempo_fin - tiempo_inicio
+    }
